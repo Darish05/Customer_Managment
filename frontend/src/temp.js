@@ -1,0 +1,297 @@
+import React, { useState, useEffect, createContext, useContext } from "react";
+import LoginPage from "./LoginPage";
+import Dashboard from "./components/Dashboard";
+import CustomerList from "./components/CustomerList";
+import DataEntry from "./components/DataEntry";
+import Reports from "./components/Reports";
+import {
+  Users,
+  TrendingUp,
+  FileDown,
+  LogOut,
+  Menu,
+  X,
+  Plus,
+} from "react-feather";
+
+// Inject global styles function
+const injectStyles = () => {
+  const styles = `
+    .gradient-red {
+      background: linear-gradient(to right, #ef4444, #dc2626);
+    }
+    .gradient-blue {
+      background: linear-gradient(to right, #3b82f6, #2563eb);
+    }
+    .shadow-card {
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+    @media (min-width: 768px) {
+      .md-hidden {
+        display: none !important;
+      }
+    }
+  `;
+
+  if (!document.getElementById("custom-styles")) {
+    const style = document.createElement("style");
+    style.id = "custom-styles";
+    style.textContent = styles;
+    document.head.appendChild(style);
+  }
+};
+
+// Context for global state management
+const AppContext = createContext();
+
+// App Provider Component
+export const AppProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+
+  return (
+    <AppContext.Provider value={{ user, setUser }}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+// Custom hook for using app context
+const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) throw new Error("useApp must be used within AppProvider");
+  return context;
+};
+
+// Main Layout Component
+const MainLayout = () => {
+  const { user, setUser } = useApp();
+  const [showMenu, setShowMenu] = useState(false);
+  const [currentView, setCurrentView] = useState("dashboard");
+
+  const handleLoginSuccess = (data) => {
+    setUser({
+      username: data.user.username,
+      name: data.user.name,
+      role: data.user.role || "user",
+    });
+  };
+
+  const logout = () => {
+    setUser(null);
+  };
+
+  if (!user) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  const navItems = [
+    { id: "dashboard", label: "Dashboard", icon: TrendingUp },
+    { id: "customers", label: "Customers", icon: Users },
+    { id: "dataEntry", label: "Data Entry", icon: Plus },
+    { id: "reports", label: "Reports", icon: FileDown },
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#F3F4F6" }}>
+      {/* Header */}
+      <header
+        className="shadow-card"
+        style={{
+          background: "white",
+          borderBottom: "1px solid #E5E7EB",
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+        }}
+      >
+        <div style={{ maxWidth: "80rem", margin: "0 auto", padding: "1rem" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div>
+                <h1
+                  style={{
+                    fontSize: "1.25rem",
+                    fontWeight: "bold",
+                    color: "#1F2937",
+                  }}
+                >
+                  Customer Manager
+                </h1>
+                <p style={{ fontSize: "0.875rem", color: "#6B7280" }}>
+                  Welcome, {user.name}
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+            >
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                style={{
+                  display: "block",
+                  padding: "0.5rem",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                className="md-hidden"
+              >
+                {showMenu ? (
+                  <X style={{ width: "1.5rem", height: "1.5rem" }} />
+                ) : (
+                  <Menu style={{ width: "1.5rem", height: "1.5rem" }} />
+                )}
+              </button>
+
+              <button
+                onClick={logout}
+                className="btn gradient-red"
+                style={{
+                  color: "white",
+                  padding: "0.5rem 1rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <LogOut style={{ width: "1rem", height: "1rem" }} />
+                Logout
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Menu */}
+          {showMenu && (
+            <div
+              style={{
+                marginTop: "1rem",
+                paddingTop: "1rem",
+                borderTop: "1px solid #E5E7EB",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
+            >
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setCurrentView(item.id);
+                      setShowMenu(false);
+                    }}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.75rem",
+                      padding: "0.75rem 1rem",
+                      borderRadius: "0.5rem",
+                      border: "none",
+                      cursor: "pointer",
+                      background:
+                        currentView === item.id ? "#DBEAFE" : "transparent",
+                      color: currentView === item.id ? "#1E40AF" : "#374151",
+                      fontWeight: currentView === item.id ? "600" : "400",
+                    }}
+                  >
+                    <Icon style={{ width: "1.25rem", height: "1.25rem" }} />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Navigation - Desktop */}
+      <nav
+        className="shadow-card"
+        style={{
+          background: "white",
+          borderBottom: "1px solid #E5E7EB",
+          position: "sticky",
+          top: "73px",
+          zIndex: 40,
+        }}
+      >
+        <div style={{ maxWidth: "80rem", margin: "0 auto", padding: "0 1rem" }}>
+          <div style={{ display: "flex", gap: "0.25rem" }}>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentView(item.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.75rem 1.5rem",
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    position: "relative",
+                    color: currentView === item.id ? "#2563EB" : "#6B7280",
+                    fontWeight: currentView === item.id ? "600" : "400",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  <Icon style={{ width: "1.25rem", height: "1.25rem" }} />
+                  {item.label}
+                  {currentView === item.id && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: "4px",
+                        background: "#2563EB",
+                        borderRadius: "9999px 9999px 0 0",
+                      }}
+                    ></div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main
+        style={{ maxWidth: "80rem", margin: "0 auto", padding: "1.5rem 1rem" }}
+      >
+        {currentView === "dashboard" && <Dashboard />}
+        {currentView === "customers" && <CustomerList />}
+        {currentView === "dataEntry" && <DataEntry />}
+        {currentView === "reports" && <Reports />}
+      </main>
+    </div>
+  );
+};
+
+// App Component (Main Entry Point)
+const App = () => {
+  useEffect(() => {
+    injectStyles();
+  }, []);
+
+  return (
+    <AppProvider>
+      <MainLayout />
+    </AppProvider>
+  );
+};
+
+export default App;
